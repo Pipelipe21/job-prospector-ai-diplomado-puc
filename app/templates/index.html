@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motor de Prospección Autónoma</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            --accent-color: #0056b3;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --bg-color: #f8fafc;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: #334155;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .app-header {
+            background: var(--primary-gradient);
+            padding: 24px 0;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .app-header h1 {
+            color: #ffffff;
+            font-size: 1.8rem;
+            margin: 0;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .app-header .subtitle {
+            color: #cbd5e1;
+            font-size: 0.95rem;
+            margin-top: 6px;
+            font-weight: 300;
+        }
+
+        /* Generic Card Styling */
+        .card {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .card-header {
+            background-color: #ffffff;
+            border-bottom: 1px solid #f1f5f9;
+            font-weight: 600;
+            color: #1e293b;
+            padding: 16px 20px;
+        }
+
+        /* Interactive Profile Settings Card */
+        .settings-card { border-top: 4px solid var(--accent-color); }
+
+        /* Job Offer Cards (Grid) */
+        .job-card {
+            cursor: pointer;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            border-left: 4px solid #cbd5e1; /* Default status color */
+        }
+
+        .job-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.05);
+            border-color: #e2e8f0;
+            border-left-color: inherit; /* keeps the left status border */
+        }
+
+        .job-card-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.3;
+            margin-bottom: 4px;
+        }
+        
+        .job-card-company {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .job-card-meta {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .job-card-body {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .market-snippet {
+            font-size: 0.85rem;
+            color: #64748b;
+            line-height: 1.5;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #e2e8f0;
+            flex-grow: 1;
+        }
+
+        /* Badges */
+        .badge-platform {
+            font-weight: 600;
+            font-size: 0.75rem;
+            padding: 5px 10px;
+            border-radius: 20px;
+            letter-spacing: 0.3px;
+        }
+        .badge-linkedin { background-color: #e0f2fe; color: #0284c7; }
+        .badge-laborum  { background-color: #fee2e2; color: #dc2626; }
+        .badge-indeed   { background-color: #e0e7ff; color: #4338ca; }
+        .badge-general  { background-color: #f1f5f9; color: #475569; }
+
+        /* Progress Bars */
+        .progress {
+            height: 8px;
+            border-radius: 10px;
+            background-color: #f1f5f9;
+            overflow: visible; /* To allow glow */
+        }
+        .progress-bar {
+            border-radius: 10px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Sync Button */
+        .btn-sync {
+            background: var(--primary-gradient);
+            border: none;
+            font-size: 1.05rem;
+            padding: 14px 24px;
+            letter-spacing: 0.5px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        .btn-sync:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        .btn-sync:disabled {
+            background: #cbd5e1;
+            transform: none;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        /* Scanning State */
+        #scanningState {
+            display: none;
+            background-color: #ffffff;
+            border: 1px solid #bae6fd;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #94a3b8;
+            margin-right: 8px;
+            position: relative;
+            top: -1px;
+        }
+        .status-dot.searching {
+            background-color: var(--warning-color);
+            animation: pulse 1.2s infinite;
+        }
+        .status-dot.ready { background-color: var(--success-color); }
+        
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.2); }
+        }
+        
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-up-item {
+            animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+
+        /* Form Controls */
+        .form-control {
+            border-color: #cbd5e1;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+        .form-control:focus {
+            border-color: #94a3b8;
+            box-shadow: 0 0 0 4px rgba(226, 232, 240, 0.5);
+        }
+        .form-label {
+            color: #334155;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-header text-center">
+    <div class="container">
+        <h1>Sistema de Análisis de Compatibilidad Laboral</h1>
+        <p class="subtitle">Motor de Prospección Autónoma — Powered by Google Gemini</p>
+    </div>
+</div>
+
+<div class="container pb-5">
+
+    <!-- Panel Superior: Configuración del Perfil del Candidato -->
+    <div class="row justify-content-center mb-5">
+        <div class="col-lg-9">
+            <div class="card settings-card">
+                <div class="card-header d-flex align-items-center">
+                    <svg xmlns="http://www.w3.org/-svg" width="18" height="18" fill="currentColor" class="bi bi-person-lines-fill me-2 text-primary" viewBox="0 0 16 16">
+                      <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5 6s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zM11 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5m.5 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1zm2 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1zm0 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1z"/>
+                    </svg>
+                    Configuración del Perfil de Búsqueda
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold">1. Documento Base (CV)</label>
+                            <input class="form-control" type="file" id="cvFile" accept=".pdf">
+                            <button type="button" class="btn btn-outline-secondary btn-sm w-100 mt-2" onclick="uploadCV()">
+                                Procesar PDF
+                            </button>
+                            <div id="uploadStatus" class="mt-2 text-center"></div>
+                        </div>
+                        <div class="col-md-7">
+                            <label class="form-label fw-semibold">2. Habilidades y Preferencias Específicas</label>
+                            <textarea class="form-control" id="habilidadesExtra" rows="4"
+                                placeholder="Defina sus requerimientos clave: Ej. 'Priorizar roles remotos en Node.js', 'Descartar DevOps', 'Busco posiciones de liderazgo técnico'.."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-3 border-top text-center">
+                        <button class="btn btn-sync text-white w-100 fw-semibold" id="btnSync" onclick="syncAndSearch()">
+                            Iniciar Prospección Autónoma y Descubrir Oportunidades
+                        </button>
+                        <p class="text-muted small mt-2 mb-0">Esta acción desplegará el motor n8n para escanear el mercado activamente y clasificar los resultados.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estado: Búsqueda en Progreso -->
+            <div id="scanningState" class="mt-4">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="spinner-border text-primary" role="status" style="width:2.5rem;height:2.5rem;border-width:3px">
+                        <span class="visually-hidden">Buscando...</span>
+                    </div>
+                    <div>
+                        <p class="fw-bold mb-1 text-primary" style="font-size:1.1rem">El radar de talento está activo</p>
+                        <p class="text-muted small mb-0">n8n está evaluando vacantes en tiempo real mediante IAG. Los hallazgos se mostrarán a continuación.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel Principal: Dashboard de Oportunidades Detectadas -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold text-slate-800 m-0" style="color: #1e293b;">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="dashboardTitle">Ranking de Oportunidades</span>
+        </h4>
+        <button class="btn btn-sm btn-outline-secondary bg-white shadow-sm" style="border-radius:20px" onclick="loadDiscoveries()">
+            ↻ Actualizar Dashboard
+        </button>
+    </div>
+
+    <!-- Contenedor Grid Fila/Columna para Cartas -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4" id="discoveryGrid">
+        <!-- Contenido dinámico renderizado por JS -->
+    </div>
+
+    <!-- Modal de detalle de oferta -->
+    <div class="modal fade" id="offerDetailModal" tabindex="-1" aria-labelledby="offerDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="border-radius:16px; border:none; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25)">
+                <div class="modal-header border-0 pb-0 mt-2 mx-2">
+                    <div class="d-flex justify-content-between w-100 align-items-start">
+                        <div>
+                            <span class="badge badge-general mb-2" id="modalBadge">Platform</span>
+                            <h4 class="modal-title fw-bold text-dark" id="offerDetailModalLabel">Cargo</h4>
+                            <p class="text-muted fw-semibold" id="modalCompany">Empresa</p>
+                        </div>
+                        <button type="button" class="btn-close bg-light rounded-circle p-2" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                </div>
+                <div class="modal-body pt-0 px-4">
+                    <div class="text-center py-4 mb-4" style="background-color: var(--bg-color); border-radius: 12px;">
+                        <span class="display-3 fw-bolder" style="letter-spacing:-1px" id="modalPct">--</span><span class="fs-4 text-muted fw-bold">%</span>
+                        <p class="text-muted mt-1 fw-medium mb-0">Nivel de Idoneidad Técnica</p>
+                    </div>
+                    <p id="modalSummary" class="text-dark mb-4 fw-medium" style="line-height:1.6; font-size: 1.05rem"></p>
+                    
+                    <!-- Acordeon Limpio -->
+                    <div class="accordion" id="detailAccordion">
+                        <div class="accordion-item border-0 border-bottom">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button shadow-none bg-white fw-bold text-success px-0" type="button" data-bs-toggle="collapse" data-bs-target="#collapseA">
+                                    ✓ Competencias Técnicas Compatibles
+                                </button>
+                            </h2>
+                            <div id="collapseA" class="accordion-collapse collapse show border-0" data-bs-parent="#detailAccordion">
+                                <div class="accordion-body px-0 pt-1 pb-4 text-secondary" id="modalPros" style="white-space:pre-wrap;font-size:.95rem;line-height:1.6"></div>
+                            </div>
+                        </div>
+                        <div class="accordion-item border-0 border-bottom">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed shadow-none bg-white fw-bold text-danger px-0" type="button" data-bs-toggle="collapse" data-bs-target="#collapseB">
+                                    ✕ Brechas de Competencia Identificadas
+                                </button>
+                            </h2>
+                            <div id="collapseB" class="accordion-collapse collapse border-0" data-bs-parent="#detailAccordion">
+                                <div class="accordion-body px-0 pt-1 pb-4 text-secondary" id="modalImprovements" style="white-space:pre-wrap;font-size:.95rem;line-height:1.6"></div>
+                            </div>
+                        </div>
+                        <div class="accordion-item border-0">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed shadow-none bg-white fw-bold text-primary px-0" type="button" data-bs-toggle="collapse" data-bs-target="#collapseC">
+                                    📈 Análisis de Idoneidad en el Mercado
+                                </button>
+                            </h2>
+                            <div id="collapseC" class="accordion-collapse collapse border-0" data-bs-parent="#detailAccordion">
+                                <div class="accordion-body px-0 pt-1 pb-2 text-secondary" id="modalMarket" style="white-space:pre-wrap;font-size:.95rem;line-height:1.6"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pb-4 pe-4">
+                    <button type="button" class="btn btn-light fw-semibold px-4 py-2" data-bs-dismiss="modal">Cerrar Informe</button>
+                    <!-- Aquí se podría agregar un botón de "Postular Directamente" en el futuro -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div><!-- end .container -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const N8N_WEBHOOK_URL = "https://your-n8n-instance.com/webhook/sync-search"; 
+
+    // Configuración visual para plataformas
+    const getPlatformTheme = (platformName) => {
+        const name = (platformName || 'general').toLowerCase();
+        if (name.includes('linkedin')) return { class: 'badge-linkedin', text: 'LinkedIn', color: '#0284c7' };
+        if (name.includes('laborum')) return { class: 'badge-laborum', text: 'Laborum', color: '#dc2626' };
+        if (name.includes('indeed')) return { class: 'badge-indeed', text: 'Indeed', color: '#4338ca' };
+        return { class: 'badge-general', text: platformName || 'General', color: '#475569' };
+    };
+
+    // Subir CV
+    async function uploadCV() {
+        // ... (misma lógica de upload_cv) ...
+        const fileInput = document.getElementById('cvFile');
+        const statusDiv = document.getElementById('uploadStatus');
+        if (!fileInput.files.length) {
+            statusDiv.innerHTML = '<span class="text-warning small fw-medium">⚠ Por favor seleccione un archivo PDF.</span>';
+            return;
+        }
+        statusDiv.innerHTML = '<span class="text-primary small fw-medium"><span class="spinner-border spinner-border-sm me-1"></span>Procesando documento...</span>';
+        try {
+            const formData = new FormData();
+            formData.append('cv', fileInput.files[0]);
+            const response = await fetch('/upload_cv', { method: 'POST', body: formData });
+            const data = await response.json();
+            if (response.ok) {
+                statusDiv.innerHTML = `<span class="text-success small fw-bold">✓ ${data.message}</span>`;
+            } else {
+                statusDiv.innerHTML = `<span class="text-danger small fw-medium">Error: ${data.error || 'Fallo indeterminado'}</span>`;
+            }
+        } catch (e) {
+            statusDiv.innerHTML = `<span class="text-danger small fw-medium">Error de conexión: ${e}</span>`;
+        }
+    }
+
+    // Sincronizar y Buscar
+    async function syncAndSearch() {
+        const btn = document.getElementById('btnSync');
+        const scanningDiv = document.getElementById('scanningState');
+        const dot = document.getElementById('statusDot');
+
+        btn.disabled = true;
+        scanningDiv.style.display = 'block';
+        dot.className = 'status-dot searching';
+
+        document.getElementById('discoveryGrid').innerHTML = 
+            `<div class="col-12 text-center py-5 fade-up-item">
+                <div class="spinner-grow text-primary opacity-50 mb-3" role="status"></div>
+                <h5 class="text-muted fw-semibold">Analizando el mercado a través de n8n...</h5>
+            </div>`;
+
+        try {
+            const response = await fetch('/api/v1/sync-search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ habilidades_adicionales: document.getElementById('habilidadesExtra').value })
+            });
+            if (response.ok) {
+                startPolling();
+            } else {
+                showError('Error al contactar el motor de prospección.');
+                resetState();
+            }
+        } catch (e) {
+            showError('Error de conexión al servidor local.');
+            resetState();
+        }
+    }
+
+    // Polling automático
+    let pollingInterval = null;
+    let pollCount = 0;
+    const MAX_POLLS = 18;
+
+    function startPolling() {
+        pollCount = 0;
+        if (pollingInterval) clearInterval(pollingInterval);
+        pollingInterval = setInterval(async () => {
+            pollCount++;
+            const prevCount = parseInt(sessionStorage.getItem('discoveryCount') || '0');
+            try {
+                const res = await fetch('/api/v1/discoveries');
+                const data = await res.json();
+                const newCount = data.count || 0;
+                if (newCount > prevCount || pollCount >= MAX_POLLS) {
+                    clearInterval(pollingInterval);
+                    sessionStorage.setItem('discoveryCount', String(newCount));
+                    await loadDiscoveries();
+                    resetState();
+                }
+            } catch (e) { }
+        }, 8000);
+    }
+
+    function resetState() {
+        document.getElementById('btnSync').disabled = false;
+        document.getElementById('scanningState').style.display = 'none';
+        document.getElementById('statusDot').className = 'status-dot ready';
+    }
+
+    function showError(msg) {
+        document.getElementById('discoveryGrid').innerHTML =
+            `<div class="col-12 text-center mt-4"><div class="alert alert-danger shadow-sm border-0 fw-medium">${msg}</div></div>`;
+    }
+
+    // Cargar Grid de oportunidades (Rediseñado de Tabla a Cards)
+    async function loadDiscoveries() {
+        const grid = document.getElementById('discoveryGrid');
+        try {
+            const response = await fetch('/api/v1/discoveries');
+            const result = await response.json();
+            
+            if (response.ok && result.data && result.data.length > 0) {
+                grid.innerHTML = result.data.map((r, index) => {
+                    // Gradación de colores basada en puntaje
+                    const pct = parseFloat(r.match_percentage).toFixed(1);
+                    let gradientClass = 'bg-secondary';
+                    let borderColor = '#94a3b8'; // gris
+                    
+                    if (pct >= 85) { gradientClass = 'bg-success'; borderColor = '#10b981'; } // verde
+                    else if (pct >= 60) { gradientClass = 'bg-primary'; borderColor = '#3b82f6'; } // azul
+                    else if (pct >= 40) { gradientClass = 'bg-warning'; borderColor = '#f59e0b'; } // amarillo
+                    else { gradientClass = 'bg-danger'; borderColor = '#ef4444'; } // rojo
+
+                    const theme = getPlatformTheme(r.plataforma);
+                    const fecha = r.created_at ? r.created_at.split('T')[0] : 'Reciente';
+                    const marketSnippet = (r.market_relevance || 'No evaluado.').substring(0, 100);
+                    
+                    // Staggered animation delay
+                    const delay = Math.min((index) * 0.05, 0.5);
+
+                    return `
+                    <div class="col fade-up-item" style="animation-delay: ${delay}s">
+                        <div class="card job-card" style="border-left-color: ${borderColor}" onclick='showDetail(${JSON.stringify(r)})'>
+                            <div class="card-body job-card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <span class="badge-platform ${theme.class}">${theme.text}</span>
+                                    <span class="job-card-meta">${fecha}</span>
+                                </div>
+                                
+                                <h5 class="job-card-title mt-2">${r.titulo}</h5>
+                                <div class="job-card-company mb-3">${r.empresa}</div>
+                                
+                                <div class="mt-auto">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-semibold text-slate-700" style="font-size:0.85rem">Afinidad (Gemini)</span>
+                                        <span class="fw-bold" style="font-size:0.95rem; color:${borderColor}">${pct}%</span>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar ${gradientClass}" role="progressbar" style="width: ${pct}%" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <div class="market-snippet">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-graph-up-arrow me-1" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 0h1v15h15v1H0zm10 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V4.9l-3.613 4.417a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61L13.445 4H10.5a.5.5 0 0 1-.5-.5"/></svg>
+                                        ${marketSnippet}...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+                document.getElementById('statusDot').className = 'status-dot ready';
+            } else {
+                grid.innerHTML = '<div class="col-12"><div class="alert alert-light text-center py-5 border">No hay oportunidades registradas en la base de datos local. Inicie una búsqueda autónoma.</div></div>';
+            }
+        } catch(e) {
+            grid.innerHTML = `<div class="col-12"><div class="alert alert-danger text-center">Error cargando resultados: ${e}</div></div>`;
+        }
+    }
+
+    // Modal de Detalle
+    function showDetail(r) {
+        document.getElementById('offerDetailModalLabel').textContent = r.titulo;
+        document.getElementById('modalCompany').textContent = r.empresa;
+        
+        const theme = getPlatformTheme(r.plataforma);
+        const badge = document.getElementById('modalBadge');
+        badge.textContent = theme.text;
+        badge.className = `badge ${theme.class} mb-2`;
+
+        const pct = parseFloat(r.match_percentage);
+        document.getElementById('modalPct').textContent = pct.toFixed(1);
+        
+        // Dynamic colors for modal percentage
+        let pctColor = '#ef4444';
+        if(pct >= 85) pctColor = '#10b981';
+        else if (pct >= 60) pctColor = '#3b82f6';
+        else if (pct >= 40) pctColor = '#f59e0b';
+        document.getElementById('modalPct').style.color = pctColor;
+
+        document.getElementById('modalSummary').textContent = r.summary || 'Sin resumen disponible.';
+        document.getElementById('modalPros').textContent = r.technical_pros || 'No especificadas.';
+        document.getElementById('modalImprovements').textContent = r.improvement_areas || 'No especificadas.';
+        document.getElementById('modalMarket').textContent = r.market_relevance || 'Análisis no disponible.';
+        
+        new bootstrap.Modal(document.getElementById('offerDetailModal')).show();
+    }
+
+    // Ejecutar al iniciar
+    window.addEventListener('DOMContentLoaded', loadDiscoveries);
+</script>
+</body>
+</html>
