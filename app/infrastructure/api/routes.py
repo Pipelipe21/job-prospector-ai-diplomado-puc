@@ -2,6 +2,7 @@ import json
 import os
 import PyPDF2
 import requests as http_client
+import urllib.parse
 from flask import Blueprint, request, jsonify, current_app, render_template
 from app.domain.entities import JobOffer, Candidate
 from app.use_cases.matchmaker import JobMatcher
@@ -46,6 +47,16 @@ def upload_cv():
     except Exception as e:
         return jsonify({"error": f"Error procesando PDF: {str(e)}"}), 500
 
+def clean_url(url: str) -> str:
+    """Extrae el link real si viene envuelto en un proxy de google.com/url."""
+    url = str(url).strip()
+    if 'google.com/url' in url:
+        parsed = urllib.parse.urlparse(url)
+        qs = urllib.parse.parse_qs(parsed.query)
+        if 'q' in qs:
+            return qs['q'][0]
+    return url
+
 def __find_job_fields(obj):
     """
     Busca de forma recursiva (Smart Parser) en un diccionario o lista
@@ -58,7 +69,8 @@ def __find_job_fields(obj):
                 'titulo': str(obj['titulo']).strip(),
                 'empresa': str(obj['empresa']).strip(),
                 'descripcion': str(obj['descripcion']).strip(),
-                'habilidades': obj.get('habilidades', [])
+                'habilidades': obj.get('habilidades', []),
+                'url': clean_url(obj.get('url', ''))
             }
         for value in obj.values():
             result = __find_job_fields(value)
@@ -79,7 +91,7 @@ def match_endpoint():
     """
     data = request.get_json(silent=True) or {}
     
-    print(f"\n[SUPERVISOR] Request JSON recibido:\n{json.dumps(data, indent=2, ensure_ascii=False)}\n")
+    # Solo para debug: print(f"\n[SUPERVISOR] Request JSON recibido...")
 
     if not data:
         return jsonify({"error": "Payload JSON ausente o mal formado."}), 400
@@ -134,7 +146,7 @@ def discovery_endpoint():
     procesa cada una con Gemini y persiste los resultados en SQLite.
     """
     raw = request.get_json(silent=True) or []
-    print(f"\n[SUPERVISOR] /discovery payload recibido: {json.dumps(raw, indent=2, ensure_ascii=False)[:500]}...\n")
+    # Solo para debug: print(f"\n[SUPERVISOR] /discovery payload recibido...")
 
     job_matcher: JobMatcher = current_app.config.get('JOB_MATCHER')
     if not job_matcher:
@@ -176,7 +188,8 @@ def discovery_endpoint():
                 summary=resumen,
                 technical_pros=technical_pros,
                 improvement_areas=improvement_areas,
-                market_relevance=market_relevance
+                market_relevance=market_relevance,
+                url=offer_data.get('url')
             )
             results.append({"id": record_id, "titulo": job_offer.titulo, "empresa": job_offer.empresa, "match_percentage": porcentaje})
         except Exception as e:
@@ -223,14 +236,17 @@ def sync_search():
                 "estudios": profile_data.get("estudios", ""),
                 "experiencia": profile_data.get("experiencia", ""),
                 "cv_text": profile_data.get("cv_text", ""),
-                "habilidades_adicionales": habilidades_adicionales
+                "habilidades_adicionales": habilidades_adicionales,
+                "search_operators": "(site:laborum.cl OR site:trabajando.cl OR site:computrabajo.com OR site:linkedin.com OR site:indeed.cl OR site:getonbrd.com OR site:bne.cl OR site:empleospublicos.cl OR site:chiletrabajos.cl OR site:firstjob.me OR site:adecco.cl) (2026 OR reciente)",
+                "limit": 15,
+                "time_range": "past_week"
             }
         except Exception as e:
             return jsonify({"error": f"Error leyendo perfil del candidato: {str(e)}"}), 500
 
     # Enviar perfil al webhook de n8n
     webhook_url = N8N_WEBHOOK_URL
-    print(f"\n[SUPERVISOR] /sync-search → Enviando perfil a n8n: {webhook_url}\n")
+    # print(f"\n[SUPERVISOR] /sync-search → Enviando perfil a n8n: {webhook_url}\n")
 
     try:
         resp = http_client.post(
@@ -245,7 +261,7 @@ def sync_search():
         }), 200
     except http_client.exceptions.ConnectionError:
         # El webhook no existe todavía (URL de ejemplo) — devolver OK para no bloquear demo
-        print("[SUPERVISOR] Webhook de n8n no alcanzable. Modo demo activado.")
+        # print("[SUPERVISOR] Webhook de n8n no alcanzable. Modo demo activado.")
         return jsonify({
             "status": "dispatched",
             "message": "Perfil preparado. Configure N8N_WEBHOOK_URL para activar la prospección real.",

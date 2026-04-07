@@ -32,7 +32,7 @@ class JobMatcher:
         if not candidate:
             return 0.0, "Operación detenida. Imposible leer el perfil propio del Candidato."
             
-        print(f"Comparando la oferta de {offer.empresa} con el perfil de Ingeniero de {candidate.nombre}...")
+        # (Sin debug prints en producción)
 
         # Preparación del contexto para el LLM
         candidate_context = ", ".join(candidate.habilidades) if candidate.habilidades else "Sin habilidades especificadas."

@@ -34,21 +34,26 @@ class DiscoveryRepository:
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP
                 )
             """)
+            # Autorización Supervisor: ALTER TABLE Seguro
+            try:
+                conn.execute("ALTER TABLE offer_results ADD COLUMN url TEXT")
+            except sqlite3.OperationalError:
+                pass # Emite error si la columna ya existe, está protegido
             conn.commit()
 
     def save_result(self, titulo: str, empresa: str, plataforma: str,
                     match_percentage: float, summary: str,
                     technical_pros: str, improvement_areas: str,
-                    market_relevance: str) -> int:
+                    market_relevance: str, url: str = None) -> int:
         """Guarda un resultado de evaluación técnica en la BD."""
         with sqlite3.connect(self._db_path) as conn:
             cursor = conn.execute("""
                 INSERT INTO offer_results
                     (titulo, empresa, plataforma, match_percentage, summary,
-                     technical_pros, improvement_areas, market_relevance, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     technical_pros, improvement_areas, market_relevance, url, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (titulo, empresa, plataforma, match_percentage, summary,
-                  technical_pros, improvement_areas, market_relevance,
+                  technical_pros, improvement_areas, market_relevance, url,
                   datetime.now().isoformat()))
             conn.commit()
             return cursor.lastrowid

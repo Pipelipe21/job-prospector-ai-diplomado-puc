@@ -36,8 +36,10 @@ class GeminiService(LLMService):
     def evaluate_compatibility(self, candidate_skills: str, job_description: str) -> Tuple[float, str, str, str]:
         # Prompt de Ingeniería Robusto diseñado para hacer match profundo
         prompt = f"""
-        Actúa como un evaluador de recursos humanos técnico, objetivo e imparcial.
-        Tu misión es evaluar la idoneidad técnica del candidato para la vacante, sin consideraciones personales, geográficas ni preferencias individuales.
+        Actúa como un evaluador de recursos humanos técnico, objetivo e imparcial especializado en perfiles estratégicos.
+        Tu misión es evaluar la idoneidad y habilidades transferibles del candidato hacia la vacante. Tienes la RESTRICCIÓN ABSOLUTA Y ESTRICTA de sugerir o priorizar cargos orientados a "Software Developer" o programación pura.
+        El usuario es un Ingeniero Civil Industrial y tu foco debe ser 100% estratégico. Prioriza fuertemente: Key Account Manager (KAM), Product Owner, Project Manager y Gerencia de Operaciones/E-commerce.
+        REGLA DE ORO: Si el CV menciona lenguajes como 'Python' o código, debes tratarlos explícitamente como "herramientas avanzadas de análisis de datos y mejora de procesos (Business Intelligence)", NO como habilidades de desarrollador de software.
         
         --- PERFIL DEL CANDIDATO ---
         Habilidades y Competencias Declaradas: {candidate_skills}
@@ -73,7 +75,7 @@ class GeminiService(LLMService):
                 break # Si llegamos aquí, fue exitoso, no necesitamos otros modelos
             except Exception as e:
                 last_error = e
-                print(f"--- FALLO MODELO {model_name}, intentando fallback... ---")
+                pass # Silently fallback
                 continue
                 
         if not response_text:
@@ -104,5 +106,5 @@ class GeminiService(LLMService):
             return 0.0, f"Error en el formato de salida: {str(jde)}", "Error", "Error", "Error"
         except Exception as e:
             # Fallback seguro que no rompe la cadena de Arquitectura Limpia
-            print(f"--- ERROR DE GEMINI: {e} ---") # Esto saldrá en tu Terminal 1
+            # Error silenciado en producción
             return 0.0, f"Error real: {str(e)}", "Error", "Error", "Error"

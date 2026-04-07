@@ -22,7 +22,7 @@ data/*.json
 # Logs y Archivos temporales
 *.log
 tmp/
-C:\Users\felip\.gemini\
+
 
 # IDEs
 .vscode/
