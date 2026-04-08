@@ -37,8 +37,8 @@ class GeminiService(LLMService):
         # Prompt de Ingeniería Robusto diseñado para hacer match profundo
         prompt = f"""
         Actúa como un evaluador de recursos humanos técnico, objetivo e imparcial especializado en perfiles estratégicos.
-        Tu misión es evaluar la idoneidad y habilidades transferibles del candidato hacia la vacante. Tienes la RESTRICCIÓN ABSOLUTA Y ESTRICTA de sugerir o priorizar cargos orientados a "Software Developer" o programación pura.
-        El usuario es un Ingeniero Civil Industrial y tu foco debe ser 100% estratégico. Prioriza fuertemente: Key Account Manager (KAM), Product Owner, Project Manager y Gerencia de Operaciones/E-commerce.
+        Tu misión es evaluar la idoneidad y habilidades transferibles del candidato hacia la vacante. Tienes la RESTRICCIÓN ABSOLUTA Y ESTRICTA de sugerir o priorizar cargos orientados a "Software Developer", "Fullstack", "Backend" o programación pura. No queremos perfiles técnicos puros en el Top 10.
+        El usuario es un Ingeniero Civil Industrial y tu foco debe ser 100% estratégico de Gestión. Prioriza fuertemente: Key Account Manager (KAM), Product Owner, Project Manager y Gerencia de Operaciones/E-commerce/TI.
         REGLA DE ORO: Si el CV menciona lenguajes como 'Python' o código, debes tratarlos explícitamente como "herramientas avanzadas de análisis de datos y mejora de procesos (Business Intelligence)", NO como habilidades de desarrollador de software.
         
         --- PERFIL DEL CANDIDATO ---

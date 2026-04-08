@@ -48,14 +48,19 @@ def upload_cv():
         return jsonify({"error": f"Error procesando PDF: {str(e)}"}), 500
 
 def clean_url(url: str) -> str:
-    """Extrae el link real si viene envuelto en un proxy de google.com/url."""
+    """Extrae el link real y lo decodifica de proxies de google.com/url."""
     url = str(url).strip()
+    original_url = url
     if 'google.com/url' in url:
         parsed = urllib.parse.urlparse(url)
         qs = urllib.parse.parse_qs(parsed.query)
         if 'q' in qs:
-            return qs['q'][0]
-    return url
+            url = qs['q'][0]
+    
+    final_url = urllib.parse.unquote(url)
+    if original_url != final_url:
+        print(f"🔗 [PORTERO_FIX] Decoded URL from {original_url} to {final_url}")
+    return final_url
 
 def __find_job_fields(obj):
     """
@@ -237,8 +242,8 @@ def sync_search():
                 "experiencia": profile_data.get("experiencia", ""),
                 "cv_text": profile_data.get("cv_text", ""),
                 "habilidades_adicionales": habilidades_adicionales,
-                "search_operators": "(site:laborum.cl OR site:trabajando.cl OR site:computrabajo.com OR site:linkedin.com OR site:indeed.cl OR site:getonbrd.com OR site:bne.cl OR site:empleospublicos.cl OR site:chiletrabajos.cl OR site:firstjob.me OR site:adecco.cl) (2026 OR reciente)",
-                "limit": 15,
+                "search_operators": "(site:laborum.cl OR site:trabajando.cl OR site:computrabajo.com OR site:linkedin.com OR site:indeed.cl OR site:getonbrd.com OR site:bne.cl OR site:empleospublicos.cl OR site:chiletrabajos.cl OR site:firstjob.me OR site:adecco.cl) after:2026-03-01",
+                "limit": 20,
                 "time_range": "past_week"
             }
         except Exception as e:

@@ -365,7 +365,7 @@
                 </div>
                 <div class="modal-footer border-0 pb-4 pe-4">
                     <button type="button" class="btn btn-light fw-semibold px-4 py-2" data-bs-dismiss="modal">Cerrar Informe</button>
-                    <!-- Aquí se podría agregar un botón de "Postular Directamente" en el futuro -->
+                    <a id="btnPostular" class="btn btn-primary fw-bold shadow-sm px-4 py-2" target="_blank" rel="noopener noreferrer" href="#">Ver Oferta Original</a>
                 </div>
             </div>
         </div>
@@ -571,6 +571,14 @@
         document.getElementById('modalPros').textContent = r.technical_pros || 'No especificadas.';
         document.getElementById('modalImprovements').textContent = r.improvement_areas || 'No especificadas.';
         document.getElementById('modalMarket').textContent = r.market_relevance || 'Análisis no disponible.';
+        
+        const postularBtn = document.getElementById('btnPostular');
+        if (r.url) {
+            postularBtn.style.display = 'inline-block';
+            postularBtn.href = r.url;
+        } else {
+            postularBtn.style.display = 'none';
+        }
         
         new bootstrap.Modal(document.getElementById('offerDetailModal')).show();
     }
